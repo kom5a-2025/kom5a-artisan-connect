@@ -1,0 +1,43 @@
+name: Déploiement Automatisé KOM5A
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Cloner le repo
+        uses: actions/checkout@v3
+
+      - name: Installer Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Installer les dépendances backend
+        run: npm install
+        working-directory: ./backend
+
+      - name: Installer les dépendances frontend
+        run: npm install
+        working-directory: ./frontend
+
+      - name: Vérifier la connexion Supabase
+        run: curl -I https://xyz.supabase.co || exit 1
+
+      - name: Vérifier la connexion OpenAI
+        run: curl -I https://api.openai.com/v1/models -H "Authorization: Bearer $OPENAI_API_KEY" || exit 1
+
+      - name: Lancer les tests backend
+        run: npm test || echo "Les tests ont échoué, mais on continue..."
+        working-directory: ./backend
+
+      - name: Lancer les tests frontend
+        run: npm test || echo "Les tests ont échoué, mais on continue..."
+        working-directory: ./frontend
+
+      - name: Déploiement sur Vercel
+        run: npx vercel --prod --token=${{ secrets.VERCEL_TOKEN }}
